@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="GameCast: responde un breve cuestionario y descubre qué videojuegos encajan con tus gustos.">
+<title>GameCast — Encuentra tu próximo videojuego</title>
+<link rel="icon" href="logo.svg">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Enlace de regreso al sitio principal de Game Cast Estadio Digital (raíz = donaciones) -->
+<div class="container" style="display:flex;padding-top:1rem">
+  <a href="../" class="btn btn-ghost">← Volver a Game Cast Estadio Digital</a>
+</div>
+
+<header class="app-header">
+  <div class="container header-inner">
+    <div class="brand">
+      <img class="brand-logo" src="logo.svg" alt="Estadio Digital GameCast" width="52" height="52" decoding="async">
+      <div class="brand-text">
+        <p class="brand-name">GameCast</p>
+        <p class="brand-tagline">Estadio Digital · tu próximo juego, a un cuestionario de distancia</p>
+      </div>
+    </div>
+    <button type="button" id="themeToggle" class="theme-toggle" aria-pressed="false" title="Cambiar entre modo claro y oscuro">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path></svg>
+      <span class="theme-toggle-label">Tema</span>
+    </button>
+  </div>
+</header>
+
+<main class="container" id="mainContent">
+
+  <!-- Región viva para anunciar cambios de paso y resultados a lectores de pantalla -->
+  <div id="liveRegion" class="visually-hidden" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- El asistente IA es ahora un chatbot flotante; su marcado está al final
+       del <body> (ver #aiWidget) para posicionarse fijo sobre la página. -->
+
+  <!-- Pestañas: Recomendador (cuestionario + resultados) / Creadores de contenido -->
+  <!-- Sección "Creadores de contenido" DESHABILITADA a petición del usuario (2026-10-15).
+       La app queda solo como Recomendador. Para reactivarla: descomentar este <nav> y el
+       <script src="creators.js"> del final del <body>. (El <section id="creators"> y creators.js
+       siguen en el repo, inertes.)
+  <nav class="view-tabs" aria-label="Secciones de GameCast">
+    <button type="button" class="view-tab is-active" data-view="recommender" aria-pressed="true"><span aria-hidden="true">🎮</span> Recomendador</button>
+    <button type="button" class="view-tab" data-view="creators" aria-pressed="false"><span aria-hidden="true">📺</span> Creadores de contenido</button>
+  </nav>
+  -->
+
+  <div id="recommenderView">
+
+  <!-- ================= CUESTIONARIO ================= -->
+  <section id="wizard" aria-labelledby="wizardHeading">
+    <h1 id="wizardHeading" class="visually-hidden">Cuestionario de recomendación de videojuegos</h1>
+
+    <div class="progress-wrap">
+      <ol class="stepper" id="stepper"></ol>
+      <div class="progress-track" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="Progreso del cuestionario" id="progressTrack">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <p class="progress-label" id="progressLabel">Paso 1 de 5</p>
+    </div>
+
+    <form id="wizardForm" novalidate>
+      <div id="stepsContainer"></div>
+
+      <div class="wizard-nav">
+        <button type="button" id="backBtn" class="btn btn-ghost" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+          Atrás
+        </button>
+        <button type="button" id="nextBtn" class="btn btn-primary" disabled>
+          <span id="nextBtnLabel">Siguiente</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= RESULTADOS ================= -->
+  <section id="results" aria-labelledby="resultsHeading" hidden>
+    <h2 id="resultsHeading" tabindex="-1">Tus recomendaciones</h2>
+    <p id="resultsNote" class="results-note"></p>
+
+    <!-- Barra de herramientas: ordenar, filtrar por plataforma y favoritos -->
+    <div class="results-toolbar" id="resultsToolbar">
+      <div class="toolbar-field toolbar-field--search">
+        <label for="searchInput">Buscar</label>
+        <div class="search-box">
+          <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+          <input type="search" id="searchInput" class="search-input" placeholder="Nombre del juego…" autocomplete="off" aria-label="Buscar juegos por título">
+        </div>
+      </div>
+      <div class="toolbar-field">
+        <label for="sortSelect">Ordenar por</label>
+        <select id="sortSelect" class="select">
+          <option value="score">Compatibilidad</option>
+          <option value="year-desc">Año (más nuevo)</option>
+          <option value="year-asc">Año (más antiguo)</option>
+          <option value="title">Nombre (A–Z)</option>
+        </select>
+      </div>
+      <div class="toolbar-field">
+        <label for="platformFilter">Plataforma</label>
+        <select id="platformFilter" class="select">
+          <option value="">Todas</option>
+        </select>
+      </div>
+      <button type="button" id="favFilterBtn" class="chip-toggle" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"></path></svg>
+        <span>Solo favoritos</span>
+        <span class="fav-count" id="favCount" hidden>0</span>
+      </button>
+    </div>
+
+    <div class="cards-grid" id="cardsGrid"></div>
+    <p id="emptyResults" class="empty-results" hidden>No hay juegos que coincidan con este filtro. Prueba a quitar el filtro de plataforma o de favoritos.</p>
+    <p id="renderNote" class="render-note" hidden></p>
+
+    <div class="show-more-wrap">
+      <button type="button" id="showMoreBtn" class="btn btn-ghost" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+        <span id="showMoreLabel">Ver más juegos</span>
+      </button>
+    </div>
+
+    <div class="results-actions">
+      <button type="button" id="copyLinkBtn" class="btn btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span id="copyLinkLabel">Copiar enlace</span>
+      </button>
+      <button type="button" id="restartBtn" class="btn btn-secondary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36M3 4v5h5"></path></svg>
+        Volver a empezar
+      </button>
+    </div>
+  </section>
+
+  </div><!-- /#recommenderView -->
+
+  <!-- ================= CREADORES DE CONTENIDO ================= -->
+  <section id="creators" aria-labelledby="creatorsHeading" hidden>
+    <h2 id="creatorsHeading" tabindex="-1">Creadores de contenido</h2>
+    <p class="creators-intro">Busca creadores de videojuegos en español —o un juego, género o tema— y salta a sus canales. Siempre puedes lanzar la búsqueda directa en YouTube o Twitch.</p>
+
+    <div class="creators-toolbar">
+      <div class="search-box creators-search">
+        <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+        <input type="search" id="creatorSearch" class="search-input" placeholder="Creador, juego o tema (p. ej. terror, Minecraft, Ibai)…" autocomplete="off" aria-label="Buscar creadores de contenido">
+      </div>
+      <div class="creator-ext">
+        <a id="ytSearchBtn" class="btn btn-ext btn-yt" href="https://www.youtube.com/results?search_query=gameplay+espa%C3%B1ol" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23 12s0-3.9-.5-5.8a3 3 0 0 0-2.1-2.1C18.5 3.6 12 3.6 12 3.6s-6.5 0-8.4.5A3 3 0 0 0 1.5 6.2C1 8.1 1 12 1 12s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.5 8.4.5 8.4.5s6.5 0 8.4-.5a3 3 0 0 0 2.1-2.1C23 15.9 23 12 23 12zM10 15.5v-7l6 3.5-6 3.5z"></path></svg>
+          <span id="ytSearchLabel">Buscar en YouTube</span>
+        </a>
+        <a id="twSearchBtn" class="btn btn-ext btn-tw" href="https://www.twitch.tv/search?term=gameplay" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 2L2 6v15h5v3h3l3-3h4l5-5V2H4zm16 11l-3 3h-5l-3 3v-3H6V4h14v9zM15 7h-2v5h2V7zm-5 0H8v5h2V7z"></path></svg>
+          <span id="twSearchLabel">Buscar en Twitch</span>
+        </a>
+      </div>
+    </div>
+
+    <div class="creators-grid" id="creatorsGrid"></div>
+    <p id="creatorsEmpty" class="empty-results" hidden></p>
+  </section>
+
+</main>
+
+<footer class="app-footer">
+  <div class="container footer-inner">
+    <p>GameCast — Recomendador local de videojuegos. Las recomendaciones funcionan sin conexión; las portadas se cargan desde internet cuando está disponible.</p>
+    <button type="button" id="privacyTrigger" class="footer-link-btn">Política de privacidad — uso interno</button>
+  </div>
+</footer>
+
+<!-- ================= MODAL: POLÍTICA DE PRIVACIDAD (uso interno) ================= -->
+<div id="privacyOverlay" class="privacy-overlay" hidden>
+  <section id="privacyDialog" class="privacy-dialog" role="dialog" aria-modal="true" aria-labelledby="privacyHeading" tabindex="-1">
+    <header class="privacy-head">
+      <h2 id="privacyHeading" class="privacy-title">Política de privacidad — uso interno</h2>
+      <button type="button" id="privacyClose" class="privacy-close" aria-label="Cerrar" title="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </header>
+    <div class="privacy-body" id="privacyBody">
+      <p class="privacy-intro">Esta política describe cómo se trata la información dentro de GameCast. Es una herramienta <strong>para uso interno/privado</strong>: no es un servicio público ni comercial.</p>
+      <p class="privacy-updated">Última actualización: 14 de octubre de 2026.</p>
+
+      <h3>1. Sin recogida de datos personales</h3>
+      <p>No hay cuentas, ni registro, ni formularios de datos personales. La app no envía tus datos a ningún servidor propio: no existe backend.</p>
+
+      <h3>2. Todo se procesa en tu navegador</h3>
+      <p>GameCast es un sitio estático; las recomendaciones se calculan localmente y funcionan sin conexión.</p>
+
+      <h3>3. Almacenamiento local (localStorage)</h3>
+      <p>En tu navegador se guardan preferencias como el tema (claro/oscuro) y tus juegos favoritos. Esa información nunca sale de tu dispositivo y puedes borrarla limpiando los datos del navegador.</p>
+
+      <h3>4. Enlace para compartir</h3>
+      <p>Al pulsar «Copiar enlace», tus respuestas se codifican en el propio enlace (en el hash <code>#...</code> de la URL). Solo se comparten si tú decides enviar ese enlace a alguien.</p>
+
+      <h3>5. Asistente de IA 100% local</h3>
+      <p>El chatbot se ejecuta íntegramente en tu navegador con WebGPU (WebLLM). La primera vez descarga un modelo ligero (~0,8 GB) desde una CDN pública y queda en caché. Tus conversaciones nunca se envían a ningún servidor ni se usan para entrenar nada.</p>
+
+      <h3>6. Recursos externos</h3>
+      <p>Para mostrar carátulas se cargan imágenes desde la CDN de Steam, y la librería/modelo de IA se descargan desde CDNs públicas (jsDelivr/Hugging Face). Como cualquier petición web, esas CDNs reciben tu dirección IP para servir el archivo, pero no les enviamos datos personales tuyos.</p>
+
+      <h3>7. Enlaces a terceros</h3>
+      <p>Los botones «Buscar en YouTube/Twitch» abren esos sitios en una pestaña nueva; una vez allí se aplican las políticas de privacidad de dichos servicios.</p>
+
+      <h3>8. Sin cookies ni rastreo</h3>
+      <p>GameCast no usa cookies, ni analítica, ni rastreadores de terceros.</p>
+
+      <h3>9. Uso interno</h3>
+      <p>Esta herramienta se distribuye para uso interno/personal; su responsable interno decide quién puede usarla.</p>
+    </div>
+  </section>
+</div>
+
+<!-- ================= CHATBOT FLOTANTE (Asistente IA local) ================= -->
+<div id="aiWidget" class="ai-widget">
+  <section id="aiWindow" class="ai-window" aria-labelledby="aiHeading" role="dialog" aria-modal="false" hidden>
+    <header class="ai-winhead">
+      <div class="ai-winhead-main">
+        <span class="ai-avatar" aria-hidden="true">🎮</span>
+        <div class="ai-winhead-text">
+          <h2 id="aiHeading" class="ai-wintitle">Asistente GameCast</h2>
+          <span class="ai-badge" id="aiBadge">IA · 100% local</span>
+        </div>
+      </div>
+      <button type="button" id="aiClose" class="ai-close" aria-label="Cerrar chat" title="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"></path></svg>
+      </button>
+    </header>
+    <div class="ai-winbody">
+      <p class="ai-hint">¡Hola! Soy tu asistente de GameCast. Resuelvo dudas (comparar juegos, duración, dificultad, plataformas, parecidos…) y te recomiendo juegos. Corro 100% en tu navegador con WebGPU; la primera vez descargo un modelo ligero (~0,8 GB) y luego quedo en caché.</p>
+      <div id="aiStatus" class="ai-status" role="status" aria-live="polite" hidden></div>
+      <button type="button" id="aiActivate" class="btn btn-primary">Activar IA (descargar modelo)</button>
+      <div id="aiChat" class="ai-chat" hidden>
+        <div id="aiMessages" class="ai-messages" aria-live="polite"></div>
+        <div id="aiSuggest" class="ai-suggest" aria-label="Preguntas rápidas" hidden></div>
+        <div class="ai-composer">
+          <label class="visually-hidden" for="aiInput">Tu mensaje para la IA</label>
+          <textarea id="aiInput" class="ai-input" rows="1" placeholder="Escribe tu mensaje…"></textarea>
+          <button type="button" id="aiSend" class="btn btn-primary ai-send" aria-label="Enviar mensaje" title="Enviar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"></path></svg>
+          </button>
+        </div>
+        <p class="ai-foot">La IA puede equivocarse; comprueba los enlaces. Solo recomienda juegos del catálogo.</p>
+      </div>
+    </div>
+  </section>
+  <button type="button" id="aiLauncher" class="ai-launcher" aria-expanded="false" aria-controls="aiWindow" aria-label="Abrir asistente IA">
+    <svg class="ai-launcher-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="12" x2="10" y2="12"></line><line x1="8" y1="10" x2="8" y2="14"></line><line x1="15" y1="13" x2="15.01" y2="13"></line><line x1="18" y1="11" x2="18.01" y2="11"></line><rect x="2" y="6" width="20" height="12" rx="6"></rect></svg>
+    <span class="ai-ping" aria-hidden="true"></span>
+  </button>
+</div>
+
+<script src="data.js" defer></script>
+<script src="catalog.js" defer></script>
+<script src="app.js" defer></script>
+<script src="ai.js" defer></script>
+<!-- creators.js deshabilitado junto con la sección "Creadores de contenido" (2026-10-15); descomentar para reactivar -->
+<!-- <script src="creators.js" defer></script> -->
+<script src="privacy.js" defer></script>
+</body>
+</html>
